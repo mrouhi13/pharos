@@ -1,0 +1,14 @@
+# OpenCode shared server on 127.0.0.1:49374: the backend of svc:ai,
+# found through ~/.config/opencode/service.json.
+[Unit]
+Description=OpenCode web UI and API (svc:ai)
+After=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=%h/.local/share/mise/shims/opencode service start
+ExecStop=%h/.local/share/mise/shims/opencode service stop
+
+[Install]
+WantedBy=default.target

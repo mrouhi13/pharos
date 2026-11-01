@@ -1,0 +1,11 @@
+[Unit]
+Description=Weekly backup of the tailscale state volume
+
+[Timer]
+OnCalendar=weekly
+# The host is a laptop: run at the next wake if the slot was missed.
+Persistent=true
+RandomizedDelaySec=1h
+
+[Install]
+WantedBy=timers.target

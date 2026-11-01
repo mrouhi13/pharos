@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pharos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#edeef0">
+<meta name="description" content="Private services reachable only through Tailscale.">
+<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pharos">
+<link rel="preload" href="/fonts/JetBrainsMono-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/SpaceGrotesk-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<script>
+// Apply the saved theme before first paint to avoid a flash.
+try{
+  var s=localStorage.getItem('tn-theme');
+  if(s==='light'||s==='dark')document.documentElement.dataset.theme=s;
+  var dark=s==='dark'||(s!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);
+  document.querySelector('meta[name=theme-color]').content=dark?'#000000':'#edeef0';
+  // motion: saved choice, else the device's reduce-motion setting
+  var m=localStorage.getItem('tn-motion');
+  if(m==='off'||(m!=='on'&&matchMedia('(prefers-reduced-motion: reduce)').matches))document.documentElement.dataset.motion='off';
+}catch(e){}
+</script>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#overview" aria-label="Pharos home">
+      <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+        <defs>
+          <radialGradient id="mk-ray" cx="15" cy="32" r="46" gradientUnits="userSpaceOnUse"><stop class="mk-s" offset=".16" stop-opacity=".8"/><stop class="mk-s" offset="1" stop-opacity=".1"/></radialGradient>
+          <radialGradient id="mk-lens" cx=".36" cy=".34" r=".8"><stop class="mk-h" offset="0"/><stop class="mk-s" offset="1"/></radialGradient>
+          <mask id="mk-cone" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64"><path fill="#fff" stroke="#fff" stroke-width="1.2" stroke-linejoin="round" d="M21.81 29.11L57.34 14.03A46 46 0 0 1 57.34 49.97L21.81 34.89A7.4 7.4 0 0 0 21.81 29.11Z"/></mask>
+        </defs>
+        <rect class="mk-beam" width="64" height="64" fill="url(#mk-ray)" mask="url(#mk-cone)"/>
+        <circle cx="15" cy="32" r="6" fill="url(#mk-lens)"/>
+      </svg>
+      <span>Pharos</span>
+    </a>
+    <div class="tools">
+      <button class="ico" id="quiet" aria-label="Alerts" hidden></button>
+      <button class="ico" id="rf" aria-label="Refresh status" title="Refresh status"></button>
+      <button class="ico" id="motion" aria-label="Motion"></button>
+      <button class="ico" id="theme" aria-label="Theme"></button>
+    </div>
+  </header>
+
+  <section class="hero" aria-live="polite">
+    <h1 id="headline" data-state="loading">Checking</h1>
+    <p class="detail" id="detail">Loading status…</p>
+  </section>
+
+  <nav class="tabs" aria-label="Pages">
+    <a class="tab" href="#overview" data-v="overview">Overview</a>
+    <a class="tab" href="#services" data-v="services">Services</a>
+    <a class="tab" href="#host" data-v="host">Host</a>
+    <a class="tab" href="#network" data-v="network">Network</a>
+    <a class="tab" href="#events" data-v="events">Events</a>
+  </nav>
+
+  <main id="v-overview">
+    <section id="ov" aria-label="Overview"></section>
+  </main>
+
+  <main id="v-services" hidden>
+    <section class="tiles" id="tiles" aria-label="Services"></section>
+  </main>
+
+  <main id="v-host" hidden>
+    <section id="host-body" aria-label="Host health and everything running"></section>
+  </main>
+
+  <main id="v-events" hidden>
+    <section id="events-body" aria-label="Events"></section>
+  </main>
+
+  <main id="v-network" hidden>
+    <section class="panels" id="panels" aria-label="Nodes and network"></section>
+    <section id="devices-body" aria-label="Devices"></section>
+    <section id="ports" aria-label="Exposed ports"></section>
+    <div class="sec"><h2>Topology</h2></div>
+    <div class="lift"><div class="diagram">
+      <div class="topo" id="topo"></div>
+      <p class="legend">
+        <span><i class="dot" data-state="up"></i>Online</span>
+        <span><i class="dot" data-state="warn"></i>Partial</span>
+        <span><i class="dot" data-state="down"></i>Offline</span>
+        <span><i class="dot" data-state="stale"></i>Unknown</span>
+      </p>
+    </div></div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<script src="/app.js" defer></script>
+</body>
+</html>

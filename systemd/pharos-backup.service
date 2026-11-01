@@ -1,0 +1,7 @@
+[Unit]
+Description=Back up the tailscale state volume
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=%h/Projects/pharos/scripts/backup-state.sh

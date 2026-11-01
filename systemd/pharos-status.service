@@ -1,0 +1,11 @@
+[Unit]
+Description=Pharos status collector
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 %h/Projects/pharos/scripts/pharos-status.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

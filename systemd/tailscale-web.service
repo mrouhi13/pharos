@@ -1,0 +1,12 @@
+[Unit]
+Description=Tailscale local web UI
+After=network-online.target
+
+[Service]
+# The tailnet name (ts.<tailnet>) is filled in by scripts/install.sh
+ExecStart=/usr/bin/tailscale web --listen 127.0.0.1:5252 --origin https://ts.TAILNET
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target

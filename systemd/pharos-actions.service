@@ -1,0 +1,12 @@
+[Unit]
+Description=Pharos actions (restart, update, quiet mode; host owner only)
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 %h/Projects/pharos/scripts/pharos-actions.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=default.target

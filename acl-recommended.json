@@ -1,0 +1,33 @@
+{
+  "hosts": {
+    "main": "100.101.102.103"
+  },
+  "tagOwners": {
+    "tag:services": ["autogroup:admin"]
+  },
+  "grants": [
+    {
+      "src": ["autogroup:member"],
+      "dst": ["host:main"],
+      "ip": ["tcp:443", "tcp:53", "udp:53", "tcp:22"]
+    },
+    {
+      "src": ["autogroup:member"],
+      "dst": ["svc:ai", "svc:dns", "svc:ts"],
+      "ip": ["tcp:443"]
+    },
+    {
+      "src": ["autogroup:member"],
+      "dst": ["192.0.2.0/24"],
+      "ip": ["*"]
+    }
+  ],
+  "ssh": [
+    {
+      "action": "check",
+      "src": ["autogroup:member"],
+      "dst": ["autogroup:self"],
+      "users": ["<your-user>"]
+    }
+  ]
+}

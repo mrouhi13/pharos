@@ -1,0 +1,70 @@
+name: pharos
+
+services:
+  tailscale:
+    # Pinned; upgrade deliberately (see docs/operations.md#upgrades).
+    image: tailscale/tailscale:v1.104.4
+    container_name: pharos-tailscale
+    hostname: pharos
+    network_mode: host
+    restart: unless-stopped
+    # Optional: only needed for first registration.
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      TS_HOSTNAME: pharos
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "true"
+      TS_AUTH_ONCE: "true"
+      TS_EXTRA_ARGS: "--advertise-tags=tag:services --accept-dns=false"
+      # Fixed WireGuard port (host tailscaled has 41641); otherwise it picks a
+      # random one each start and the dashboard's port audit flags it.
+      TS_TAILSCALED_EXTRA_ARGS: "--port=41642"
+    volumes:
+      - tailscale-state:/var/lib/tailscale
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  adguard:
+    image: adguard/adguardhome:v0.107.79
+    container_name: pharos-adguard
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Berlin
+    volumes:
+      - adguard-work:/opt/adguardhome/work
+      - adguard-conf:/opt/adguardhome/conf
+    # DNS binds are host-specific: scripts/install.sh writes them to the ignored
+    # compose.override.yaml. The admin UI stays on loopback behind svc:dns.
+    ports:
+      - "127.0.0.1:3000:3000/tcp"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  dashboard:
+    image: nginx:1.31.8-alpine
+    container_name: pharos-dashboard
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - ./site:/usr/share/nginx/html:ro
+      # Written by scripts/pharos-status.py; mount the folder so atomic renames show up.
+      - ${HOME}/.local/state/pharos:/usr/share/nginx/html/data:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  tailscale-state:
+  adguard-conf:   # AdGuardHome.yaml: upstreams, filters, rules, clients, login; backed up weekly
+  adguard-work:   # query log, stats, filter cache; rebuilt if lost

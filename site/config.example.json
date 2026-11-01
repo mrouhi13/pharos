@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "site": {
+    "title": "Pharos"
+  },
+  "services": [
+    {
+      "id": "ai",
+      "name": "OpenCode",
+      "description": "AI workspace",
+      "service": "svc:ai",
+      "runsOn": "host",
+      "access": "tailnet",
+      "endpoints": [
+        { "path": "/", "port": 49374, "expect": [200] }
+      ]
+    },
+    {
+      "id": "dns",
+      "name": "AdGuard",
+      "description": "DNS and ad blocking",
+      "service": "svc:dns",
+      "runsOn": "docker",
+      "access": "login",
+      "endpoints": [
+        { "path": "/", "port": 3000, "expect": [200, 302] }
+      ],
+      "note": "DNS on :53 for the tailnet and the LAN."
+    },
+    {
+      "id": "tailscale",
+      "name": "Tailscale",
+      "description": "Host client settings",
+      "service": "svc:ts",
+      "runsOn": "host",
+      "access": "tailnet",
+      "risk": "write",
+      "endpoints": [
+        { "path": "/", "port": 5252, "expect": [200] }
+      ],
+      "note": "Can reconfigure the host client. Raw port 5252 is ACL-blocked."
+    }
+  ],
+  "nodes": [
+    { "id": "host", "role": "Host tailscaled" },
+    { "id": "services", "role": "Tagged node · pharos-tailscale container" }
+  ],
+  "host": [
+    { "unit": "tailscaled", "scope": "system", "note": "Tailscale host node" },
+    { "unit": "docker", "scope": "system", "note": "Container runtime" },
+    { "unit": "tailscale-web", "scope": "user", "note": "Backend of svc:ts", "listen": "127.0.0.1:5252" },
+    { "unit": "opencode-web", "scope": "user", "note": "shared server (svc:ai)", "listen": "127.0.0.1:49374" }
+  ],
+  "groups": [
+    { "project": "pharos" }
+  ],
+  "exposure": [
+    { "port": 53, "note": "AdGuard DNS" },
+    { "port": 443, "proto": "tcp", "scope": "tailnet", "note": "Tailscale serve" },
+    { "port": 5252, "proto": "tcp", "scope": "tailnet", "note": "web UI of svc:ts, ACL-blocked" },
+    { "port": 41641, "proto": "udp", "note": "WireGuard · tailscaled" },
+    { "port": 41642, "proto": "udp", "note": "WireGuard · pharos-tailscale" },
+    { "port": 5353, "proto": "udp", "scope": "all", "note": "mDNS" }
+  ],
+  "backup": { "dir": "~/backups", "glob": "tailscale-state-*.tgz", "maxDays": 14 },
+  "alerts": {
+    "desktop": true,
+    "ntfy": ""
+  },
+  "devices": [
+    { "host": "phone", "name": "Phone" },
+    { "host": "tablet", "name": "Tablet" }
+  ],
+  "topology": {
+    "tiers": [
+      {
+        "label": "Clients",
+        "boxes": [
+          { "id": "net", "title": "Internet", "sub": ["no public route"], "ghost": true },
+          { "id": "phone", "device": "phone", "sub": ["Tailscale + PWAs"] },
+          { "id": "tablet", "device": "tablet", "sub": ["Tailscale + PWAs"] },
+          { "id": "landev", "title": "LAN devices", "sub": ["router, TV, NAS"] }
+        ]
+      },
+      {
+        "label": "Network",
+        "boxes": [
+          { "id": "tailnet", "title": "Tailnet", "sub": ["WireGuard · MagicDNS · ACL"], "span": 3 },
+          { "id": "lan", "title": "LAN", "sub": ["subnet route via the host"], "route": true }
+        ]
+      },
+      {
+        "label": "Nodes",
+        "boxes": [
+          { "id": "srv", "title": "tailscaled", "sub": [":443 serve", "host node"], "node": "host" },
+          { "id": "tss", "title": "pharos-tailscale", "sub": [":443 serve", "node pharos"], "node": "services", "span": 3 },
+          { "id": "dns53", "title": "pharos-adguard", "sub": [":53", "DNS for tailnet + LAN"], "svc": "dns" }
+        ]
+      },
+      {
+        "label": "Backends · 127.0.0.1",
+        "boxes": [
+          { "id": "ngx", "title": "pharos-dashboard", "sub": [":8080", "this page"], "self": true },
+          { "id": "oc", "endpoint": "ai /" },
+          { "id": "tsw", "endpoint": "tailscale /" },
+          { "id": "adg", "endpoint": "dns /", "sub": ["admin UI"] }
+        ]
+      }
+    ],
+    "edges": [
+      ["net", "tailnet", "blocked"],
+      ["phone", "tailnet"],
+      ["tablet", "tailnet"],
+      ["landev", "lan"],
+      ["tailnet", "srv", ":443"],
+      ["tailnet", "tss", ":443"],
+      ["lan", "dns53", ":53"],
+      ["tailnet", "dns53", "tailnet DNS"],
+      ["srv", "ngx"],
+      ["tss", "oc"],
+      ["tss", "tsw"],
+      ["tss", "adg"]
+    ]
+  }
+}

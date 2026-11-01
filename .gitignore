@@ -1,0 +1,10 @@
+.env
+# Mount point for the status folder (see compose.yaml)
+site/data/
+# Local dashboard config (copy site/config.example.json)
+site/config.json
+__pycache__/
+graphify-out/
+.claude/
+# Host-specific AdGuard DNS binds (scripts/install.sh)
+compose.override.yaml

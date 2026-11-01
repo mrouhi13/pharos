@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <style>.c{stop-color:#15161a}.h{stop-color:#5a5d63}@media (prefers-color-scheme:dark){.c{stop-color:#e8eaee}.h{stop-color:#fff}}</style>
+  <defs>
+    <radialGradient id="ray" cx="15" cy="32" r="46" gradientUnits="userSpaceOnUse"><stop class="c" offset=".16" stop-opacity=".8"/><stop class="c" offset="1" stop-opacity=".1"/></radialGradient>
+    <radialGradient id="lens" cx=".36" cy=".34" r=".8"><stop class="h" offset="0"/><stop class="c" offset="1"/></radialGradient>
+    <mask id="cone" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64"><path fill="#fff" stroke="#fff" stroke-width="1.2" stroke-linejoin="round" d="M21.81 29.11L57.34 14.03A46 46 0 0 1 57.34 49.97L21.81 34.89A7.4 7.4 0 0 0 21.81 29.11Z"/></mask>
+  </defs>
+  <rect width="64" height="64" fill="url(#ray)" mask="url(#cone)"/>
+  <circle cx="15" cy="32" r="6" fill="url(#lens)"/>
+</svg>
