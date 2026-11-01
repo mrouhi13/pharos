@@ -41,7 +41,12 @@ The collector sends every confirmed problem and recovery as a desktop
 notification (`alerts.desktop` in `site/config.json`). A check has to fail
 twice in a row (about a minute) before it alerts. The same changes appear on
 the **Events** tab as incidents (problem plus recovery), from
-`~/.local/state/pharos/events.json`, which keeps 30 days.
+`~/.local/state/pharos/events.json`, which keeps 30 days. A problem carries
+a **Why** block gathered when it was confirmed: the HTTP result and backend
+for an endpoint, state, exit code, health-check output and the last log lines
+for a container, the result and journal tail for a unit, `tailscaled` health
+messages for a node, the owning process for an unexpected port, and the top
+memory users. Anyone who can open the page can read it, logs included.
 
 For phone alerts, set `alerts.ntfy` to an [ntfy](https://ntfy.sh) topic URL
 and subscribe to it in the ntfy app. A public `ntfy.sh` topic sends alert text

@@ -429,6 +429,56 @@ def checks(cfg, data, previous):
     return out
 
 
+def tail(cmd, n=12):
+    """Last n lines of a command's stdout and stderr, trimmed for events.json."""
+    try:
+        out = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=CMD_TIMEOUT).stdout
+    except (OSError, subprocess.SubprocessError):
+        return []
+    return [line[:300] for line in out.splitlines() if line.strip()][-n:]
+
+
+def why(key, cfg, data):
+    """Context for a failure, gathered once when it is confirmed: what the page shows under the event."""
+    kind, _, name = key.partition(":")
+    if kind == "ep":
+        r = data["endpoints"].get(name) or {}
+        svc = next((s for s in cfg.get("services", []) if name.startswith(s.get("host", "") + "/")), None)
+        ep = next((e for e in (svc or {}).get("endpoints", []) if svc["host"] + e["path"] == name), {})
+        got = r.get("code") or r.get("error") or "no response"
+        out = [f"GET https://{name} → {got} in {r.get('ms')} ms; expected {', '.join(map(str, ep.get('expect', [200])))}"]
+        hint = {502: "502: serve is up but its backend is not answering", 404: "404: serve has no handler for this path"}.get(r.get("code"))
+        if hint:
+            out.append(hint)
+        proxy = ((data.get("serve") or {}).get((svc or {}).get("service")) or {}).get("/")
+        if proxy:
+            out.append(f"serve proxies {(svc or {}).get('service')} to {proxy}")
+        return out
+    if kind == "ctr":
+        info = (run_json(["docker", "inspect", name]) or [{}])[0].get("State") or {}
+        out = [f"state {info.get('Status')}, exit code {info.get('ExitCode')}"
+               + (", killed: out of memory" if info.get("OOMKilled") else "")
+               + (f", error: {info['Error']}" if info.get("Error") else "")]
+        probe = ((info.get("Health") or {}).get("Log") or [{}])[-1]
+        if probe.get("Output"):
+            out.append(f"health check (exit {probe.get('ExitCode')}): {probe['Output'].strip()[:300]}")
+        return out + ["--- docker logs ---"] + tail(["docker", "logs", "--tail", "12", name])
+    if kind == "unit":
+        user = ["--user"] if any(u["unit"] == name and u.get("scope") == "user" for u in cfg.get("host", [])) else []
+        props = run_text(["systemctl", *user, "show", name, "-p", "SubState,Result,ExecMainStatus"]) or ""
+        return [" ".join(props.split())] + ["--- journal ---"] + tail(["journalctl", *user, "-u", name, "-n", "12", "--no-pager", "-o", "short"])
+    if kind == "node":
+        cmd = ["tailscale", "status", "--json"]
+        st = run_json(cmd if name == "host" else ["docker", "exec", "pharos-tailscale", *cmd]) or {}
+        return [f"backend {st.get('BackendState', 'unreachable')}"] + list(st.get("Health") or [])
+    if kind == "port":
+        port, _, proto = name.partition("/")
+        return tail(["ss", "-H", "-lnp", "--" + ("udp" if proto == "udp" else "tcp"), f"sport = :{port}"]) or ["listener owned by another user (run ss -lnp as root to see it)"]
+    if key == "memory":
+        return ["top memory users (RSS KiB):"] + (run_text(["ps", "-eo", "rss,comm", "--sort=-rss", "--no-headers"]) or "").splitlines()[:6]
+    return None
+
+
 def ago(seconds):
     return f"{round(seconds / 60)} min" if seconds < 3600 else f"{seconds / 3600:.1f} h"
 
@@ -855,6 +905,9 @@ def main():
             data = collect(cfg, previous)
             data["interval"] = args.interval
             data["checks"], data["events"], new = track(checks(cfg, data, previous), previous, data["generated"], args.interval)
+            for e in new:
+                if e["ok"] is False:
+                    e["more"] = why(e["key"], cfg, data) or None
             data["quiet"] = quiet_mode(state)
             done = take_pending(state)  # actions are info events: logged, never alerted
             if done:

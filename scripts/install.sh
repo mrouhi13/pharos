@@ -72,7 +72,7 @@ lanip=$(ip -j route show default | js 'd[0]["prefsrc"]' 2>/dev/null || true)
   printf '      - "%s:53:53/tcp"\n      - "%s:53:53/udp"\n' "$hostip" "$hostip"
 } > compose.override.yaml
 echo "compose.override.yaml: AdGuard DNS on ${lanip:-no LAN} and $hostip"
-mkdir -p "$HOME/.local/state/pharos" "$HOME/.config/systemd/user"  # before compose, or Docker makes it root's
+mkdir -p "$HOME/.local/state/pharos" "$HOME/.config/systemd/user" site/data  # before compose: Docker makes the state folder root's, and cannot create the mount point inside read-only site/
 if [ ! -f site/config.json ]; then
   cp site/config.example.json site/config.json
   echo "wrote site/config.json from the example; edit it for this host"

@@ -109,7 +109,9 @@ Units in `systemd/` take effect only after copying to `~/.config/systemd/user/`,
   the LAN (the advertised route) and the gateway. Never hardcode data in
   `app.js`.
 - `index.html` is the shell; `app.js` renders five hash tabs: `#overview`
-  (default), `#services`, `#host`, `#network`, `#events`. `#system` and
+  (default), `#services`, `#host`, `#network`, `#events`; on touch, a
+  sideways swipe moves to the next or previous tab (not from the screen edge
+  or inside anything that scrolls sideways). `#system` and
   `#architecture` redirect to `#network`. `#tab/id` opens a tab and scrolls
   to that element (`svc-<id>`, `ctr-<name>`, `unit-<name>`, `node-<id>`,
   `port-<n>-<proto>`, `route`, `devices`, `health`, `backup`, `packages`,
@@ -149,7 +151,8 @@ Units in `systemd/` take effect only after copying to `~/.config/systemd/user/`,
   tiles are top-aligned, since a tile expands in place; meter bars sit at the bottom so a
   wrapping caption cannot push one out of line. Uppercase labels use `.04em` tracking.
 - Motion: topology lines flow, healthy dots breathe, down dots pulse, tabs fade
-  in (desktop), the logo's beam breathes. Loops take their delay from `--t0` (set from the
+  in (desktop) or follow a touch swipe and slide in from its side,
+  the logo's beam breathes. Loops take their delay from `--t0` (set from the
   clock in `syncMotion()`) so 30s re-renders never restart them; keep loop
   lengths dividing 24s. The header motion switch (`localStorage.tn-motion`,
   `data-motion="off"`) turns it all off; with no saved choice it follows
@@ -186,10 +189,14 @@ Units in `systemd/` take effect only after copying to `~/.config/systemd/user/`,
   the tailscaled peer API), host health, and the newest backup.
 - A check must fail 2 cycles to alert; recovery counts at once. Changes go to
   `events.json` (30 days, the Events tab), `notify-send`, and `alerts.ntfy`
-  if set. A gap over 5 intervals is an info event.
+  if set. A gap over 5 intervals is an info event. A new problem gets
+  `more` (lines from `why()`: logs, journal, exit code, health output, HTTP
+  result), gathered once when confirmed, never every cycle; the Events tab
+  shows it under Why.
 - Writes `~/.local/state/pharos/{status,events}.json` atomically. Compose
   mounts that folder read-only at `/data/` (a folder, so renames show);
-  `site/data/` is only the ignored mount point.
+  `site/data/` is only the ignored mount point; `install.sh` creates it, and the
+  dashboard cannot start without it (`site/` is mounted read-only).
 - A Service live on `pharos-tailscale` but missing from `services` in config is an
   amber `svc:*` issue ("live but not in config.json").
 - Also: device details (IPs, MagicDNS name, traffic, handshake, key expiry),

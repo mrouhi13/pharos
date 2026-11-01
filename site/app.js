@@ -529,7 +529,7 @@ function incidents(events) {
   const open = new Map(), out = [];
   for (const e of events) { // oldest first
     if (e.ok == null) out.push({ key: e.key, label: e.label, detail: e.detail, start: e.t, info: true });
-    else if (!e.ok) { const inc = { key: e.key, label: e.label, detail: e.detail, start: e.t, end: null }; open.set(e.key, inc); out.push(inc); }
+    else if (!e.ok) { const inc = { key: e.key, label: e.label, detail: e.detail, more: e.more, start: e.t, end: null }; open.set(e.key, inc); out.push(inc); }
     else if (open.has(e.key)) { open.get(e.key).end = e.t; open.delete(e.key); }
     else out.push({ key: e.key, label: e.label, detail: e.detail, start: null, end: e.t }); // its start is older than the history
   }
@@ -560,6 +560,8 @@ function incidentRow(x) {
     x.info && linkFor(x.key) === '#events' ? h('span', { class: 'r-name', text: x.label }) : h('a', { class: 'r-name ln', href: linkFor(x.key), text: x.label }),
     h('span', { class: 'r-right', text: right }),
     h('span', { class: 'r-sub', text: x.detail + (x.info ? '' : ongoing ? ' · ongoing' : ' · recovered') }),
+    x.more && h('details', { class: 'r-more', 'data-ev': x.key + '@' + x.start, open: S.open.has(x.key + '@' + x.start) }, [
+      h('summary', { text: 'Why' }), h('pre', { text: x.more.join('\n') })]),
   ]);
 }
 function renderEvents() {
@@ -984,6 +986,56 @@ document.addEventListener('click', (e) => {
     if (o) S.open.add(id); else S.open.delete(id);
   }
 });
+
+// keep an event's Why open across re-renders; toggle does not bubble, so listen in capture
+document.addEventListener('toggle', (e) => {
+  const d = e.target.dataset && e.target.dataset.ev;
+  if (d) { if (e.target.open) S.open.add(d); else S.open.delete(d); }
+}, true);
+
+/* touch: a clear sideways swipe moves to the next or previous tab; the page follows the finger */
+let swipe = null;
+function scrollsX(el) {
+  for (; el && el !== document.body; el = el.parentElement) {
+    if (el.scrollWidth > el.clientWidth && /auto|scroll/.test(getComputedStyle(el).overflowX)) return true;
+  }
+  return false;
+}
+function dragTo(m, dx) {
+  m.style.transform = dx ? 'translateX(' + dx + 'px)' : '';
+  m.style.opacity = dx ? String(1 - Math.min(Math.abs(dx) / 400, 0.3)) : '';
+}
+document.addEventListener('touchstart', (e) => {
+  const t = e.touches[0];
+  // skip multi-touch, the screen edges (the browser's back/forward gesture), and anything that scrolls sideways itself
+  swipe = e.touches.length > 1 || t.clientX < 24 || t.clientX > innerWidth - 24 || scrollsX(e.target) ? null
+    : { x: t.clientX, y: t.clientY, at: Date.now(), m: $('#v-' + S.view), side: false };
+}, { passive: true });
+document.addEventListener('touchmove', (e) => {
+  if (!swipe || root.dataset.motion === 'off') return;
+  const t = e.touches[0], dx = t.clientX - swipe.x, dy = t.clientY - swipe.y;
+  if (!swipe.side) swipe.side = Math.abs(dx) > 10 && Math.abs(dx) > 2 * Math.abs(dy);
+  if (!swipe.side) return;
+  const i = VIEWS.indexOf(S.view) + (dx < 0 ? 1 : -1);
+  swipe.m.style.transition = 'none';
+  dragTo(swipe.m, dx * (i >= 0 && i < VIEWS.length ? 0.35 : 0.12)); // resists past the first and last tab
+}, { passive: true });
+function endSwipe(t) {
+  if (!swipe) return;
+  const { m, x, y, at } = swipe, dx = t ? t.clientX - x : 0, dy = t ? t.clientY - y : 0;
+  swipe = null;
+  const i = VIEWS.indexOf(S.view) + (dx < 0 ? 1 : -1);
+  const go = t && Date.now() - at < 600 && Math.abs(dx) >= 60 && Math.abs(dx) >= 2 * Math.abs(dy)
+    && !getSelection().toString() && i >= 0 && i < VIEWS.length;
+  m.style.transition = go ? 'none' : ''; // a cancelled swipe springs back (transition in app.css)
+  dragTo(m, 0);
+  if (!go) return;
+  if (root.dataset.motion !== 'off') $('#v-' + VIEWS[i]).dataset.in = dx < 0 ? 'next' : 'prev'; // slides in from the side it was pulled from
+  location.hash = '#' + VIEWS[i];
+}
+document.addEventListener('touchend', (e) => endSwipe(e.changedTouches[0]), { passive: true });
+document.addEventListener('touchcancel', () => endSwipe(null), { passive: true });
+document.addEventListener('animationend', (e) => { if (e.target.dataset && e.target.dataset.in) delete e.target.dataset.in; });
 
 /* pages: one hash per tab; old names redirect */
 const VIEWS = ['overview', 'services', 'host', 'network', 'events'];

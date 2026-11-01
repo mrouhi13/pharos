@@ -58,6 +58,12 @@ button{font:inherit;color:inherit}
 a{color:inherit}
 [hidden]{display:none!important}
 @keyframes enter{from{opacity:0;transform:translateY(4px)}}
+/* touch swipes: the tab follows the finger, springs back if let go early, and the next one slides in */
+main{transition:transform .25s ease-out,opacity .25s ease-out}
+main[data-in="next"]{animation:in-next .28s ease-out}
+main[data-in="prev"]{animation:in-prev .28s ease-out}
+@keyframes in-next{from{opacity:0;transform:translateX(40px)}}
+@keyframes in-prev{from{opacity:0;transform:translateX(-40px)}}
 h2,h3{margin:0;font-weight:500;font-family:var(--disp);letter-spacing:-.005em}
 .label,.st,.tag,.tab,.toast,dt,.sec span,.tier-label,.day{font-size:var(--f1);letter-spacing:.04em;text-transform:uppercase}
 .ok-t{color:var(--ok)}.warn-t{color:var(--warn)}.bad-t{color:var(--bad)}.dim-t{color:var(--dim)}
@@ -162,6 +168,10 @@ dd{margin:0;min-width:0;overflow-wrap:anywhere}
 .act[data-armed]{background:linear-gradient(var(--warnbg),var(--warnbg)),var(--surf2);color:var(--warn)}
 .act:disabled{cursor:progress;color:var(--dim)}
 .r-sub{grid-column:2/-1;color:var(--dim);font-size:var(--f1);overflow-wrap:anywhere}
+.r-more{grid-column:2/-1;margin-top:var(--s1);font-size:var(--f1)}
+.r-more summary{width:max-content;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
+.r-more summary:hover{color:var(--fg)}
+.r-more pre{margin:var(--s2) 0 0;padding:var(--s2) var(--s3);max-height:16em;overflow:auto;background:var(--surf2);color:var(--muted);font:inherit;line-height:1.5;white-space:pre}
 .chip{--cut:8px;display:inline-flex;align-items:center;gap:var(--s2);padding:var(--s2) var(--s4) var(--s2) var(--s3);border:0;background:var(--surf);color:var(--fg);text-decoration:none;font-size:var(--f2);cursor:pointer;transition:background .2s}
 .chip:hover{background:var(--surf2)}
 .chip:hover .ar,.cell:hover .ar,.tile:hover .name .ar,.name:focus-visible .ar,.ep-link:hover .ar,.ep-link:focus-visible .ar{transform:translate(2px,-2px);stroke:var(--fg)}
